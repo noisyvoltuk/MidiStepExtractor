@@ -1,0 +1,657 @@
+<Window x:Class="MidiStepExtractor.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:MidiStepExtractor.ViewModels"
+        xmlns:conv="clr-namespace:MidiStepExtractor.Converters"
+        xmlns:models="clr-namespace:MidiStepExtractor.Models"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        Title="MIDI Step Extractor"
+        Width="1100" Height="780"
+        MinWidth="900" MinHeight="640"
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="CanResize">
+
+    <Window.DataContext>
+        <vm:MainViewModel/>
+    </Window.DataContext>
+
+    <Window.Resources>
+
+        <!-- ═══ CONVERTERS ═══ -->
+        <conv:BoolToVisibilityConverter        x:Key="BoolToVis"/>
+        <conv:InverseBoolToVisibilityConverter  x:Key="InvBoolToVis"/>
+        <conv:BoolToPlayLabelConverter          x:Key="PlayLabel"/>
+        <conv:StepColorConverter                x:Key="StepColor"/>
+        <conv:PlayingToOpacityConverter         x:Key="PlayOpacity"/>
+        <conv:VelocityDisplayConverter          x:Key="VelocityDisplay"/>
+        <conv:LengthDisplayConverter            x:Key="LengthDisplay"/>
+        <conv:LoadedToBrushConverter            x:Key="LoadedBrush"/>
+
+        <!-- ═══ COLOURS ═══ -->
+        <SolidColorBrush x:Key="BgDeepBrush"       Color="#0D0D0F"/>
+        <SolidColorBrush x:Key="BgPanelBrush"      Color="#141418"/>
+        <SolidColorBrush x:Key="BgCardBrush"       Color="#1C1C22"/>
+        <SolidColorBrush x:Key="BgElevatedBrush"   Color="#242430"/>
+        <SolidColorBrush x:Key="BorderSubtleBrush" Color="#2A2A35"/>
+        <SolidColorBrush x:Key="BorderActiveBrush" Color="#3D3D50"/>
+        <SolidColorBrush x:Key="AccentAmberBrush"  Color="#F59E0B"/>
+        <SolidColorBrush x:Key="AccentGreenBrush"  Color="#22C55E"/>
+        <SolidColorBrush x:Key="AccentRedBrush"    Color="#EF4444"/>
+        <SolidColorBrush x:Key="TextPrimaryBrush"  Color="#F0F0F5"/>
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#8888A0"/>
+        <SolidColorBrush x:Key="TextDimBrush"      Color="#444455"/>
+
+        <!-- ═══ BUTTON STYLES ═══ -->
+        <Style x:Key="PrimaryButton" TargetType="Button">
+            <Setter Property="Background"   Value="#F59E0B"/>
+            <Setter Property="Foreground"   Value="#0D0D0F"/>
+            <Setter Property="FontWeight"   Value="SemiBold"/>
+            <Setter Property="FontSize"     Value="12"/>
+            <Setter Property="Padding"      Value="16,8"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor"       Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="3" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#FBBF24"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#92610A"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="#242430"/>
+                                <Setter Property="Foreground" Value="#444455"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SecondaryButton" TargetType="Button">
+            <Setter Property="Background"     Value="#242430"/>
+            <Setter Property="Foreground"     Value="#F0F0F5"/>
+            <Setter Property="FontSize"       Value="12"/>
+            <Setter Property="Padding"        Value="16,8"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush"    Value="#3D3D50"/>
+            <Setter Property="Cursor"         Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background"   Value="#2E2E3C"/>
+                                <Setter Property="BorderBrush"  Value="#F59E0B"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="#444455"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="GreenButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+            <Setter Property="Background" Value="#22C55E"/>
+            <Setter Property="Foreground" Value="#0D0D0F"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#4ADE80"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- ═══ TEXTBOX ═══ -->
+        <Style x:Key="DarkTextBox" TargetType="TextBox">
+            <Setter Property="Background"     Value="#242430"/>
+            <Setter Property="Foreground"     Value="#F0F0F5"/>
+            <Setter Property="BorderBrush"    Value="#3D3D50"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"        Value="6,4"/>
+            <Setter Property="FontFamily"     Value="Consolas"/>
+            <Setter Property="FontSize"       Value="11"/>
+            <Setter Property="CaretBrush"     Value="#F59E0B"/>
+        </Style>
+
+        <!-- ═══ COMBOBOX ITEM ═══ -->
+        <Style x:Key="DarkComboBoxItem" TargetType="ComboBoxItem">
+            <Setter Property="Background" Value="#242430"/>
+            <Setter Property="Foreground" Value="#F0F0F5"/>
+            <Setter Property="Padding"    Value="8,5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter Property="Background" Value="#3D3D50"/>
+                                <Setter Property="Foreground" Value="#F59E0B"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#2E2E3C"/>
+                                <Setter Property="Foreground" Value="#F0F0F5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ═══ COMBOBOX ═══ -->
+        <Style x:Key="DarkComboBox" TargetType="ComboBox">
+            <Setter Property="Background"          Value="#242430"/>
+            <Setter Property="Foreground"          Value="#F0F0F5"/>
+            <Setter Property="BorderBrush"         Value="#3D3D50"/>
+            <Setter Property="BorderThickness"     Value="1"/>
+            <Setter Property="Padding"             Value="8,4"/>
+            <Setter Property="FontSize"            Value="12"/>
+            <Setter Property="Height"              Value="30"/>
+            <Setter Property="ItemContainerStyle"  Value="{StaticResource DarkComboBoxItem}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton x:Name="ToggleButton"
+                                          Background="{TemplateBinding Background}"
+                                          BorderBrush="{TemplateBinding BorderBrush}"
+                                          BorderThickness="{TemplateBinding BorderThickness}"
+                                          Foreground="{TemplateBinding Foreground}"
+                                          IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                          Focusable="False">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                CornerRadius="2">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="20"/>
+                                                </Grid.ColumnDefinitions>
+                                                <ContentPresenter Grid.Column="0" Margin="8,0,0,0"
+                                                                  VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="&#x25BE;"
+                                                           Foreground="#8888A0"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <ContentPresenter x:Name="ContentSite"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              Margin="8,0,24,0"
+                                              VerticalAlignment="Center"
+                                              IsHitTestVisible="False"
+                                              TextBlock.Foreground="#F0F0F5"/>
+                            <Popup x:Name="Popup" IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True" Focusable="False" PopupAnimation="Slide"
+                                   Placement="Bottom">
+                                <Border Background="#242430" BorderBrush="#3D3D50" BorderThickness="1"
+                                        MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                        MinWidth="{TemplateBinding ActualWidth}">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                        <ItemsPresenter/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ═══ VELOCITY SLIDER ═══ -->
+        <Style x:Key="VelocitySlider" TargetType="Slider">
+            <Setter Property="Minimum"     Value="0"/>
+            <Setter Property="Maximum"     Value="127"/>
+            <Setter Property="Orientation" Value="Vertical"/>
+            <Setter Property="Height"      Value="50"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid>
+                            <Rectangle Width="2" HorizontalAlignment="Center" Fill="#3D3D50"/>
+                            <Track Name="PART_Track" Orientation="Vertical">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="Slider.DecreaseLarge"
+                                                  Background="Transparent" BorderThickness="0" Focusable="False"/>
+                                </Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Width="14" Height="6">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Rectangle Fill="#F59E0B" RadiusX="2" RadiusY="2"/>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="Slider.IncreaseLarge"
+                                                  Background="Transparent" BorderThickness="0" Focusable="False"/>
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ═══ PANEL CARD ═══ -->
+        <Style x:Key="PanelCard" TargetType="Border">
+            <Setter Property="Background"       Value="#1C1C22"/>
+            <Setter Property="BorderBrush"      Value="#2A2A35"/>
+            <Setter Property="BorderThickness"  Value="1"/>
+            <Setter Property="CornerRadius"     Value="4"/>
+            <Setter Property="Padding"          Value="12"/>
+        </Style>
+
+    </Window.Resources>
+
+    <Window.Background>
+        <SolidColorBrush Color="#0D0D0F"/>
+    </Window.Background>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="48"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="28"/>
+        </Grid.RowDefinitions>
+
+        <!-- ═══════════════════════════════════════════
+             TITLE BAR
+        ═══════════════════════════════════════════ -->
+        <Border Grid.Row="0" Background="#141418" BorderBrush="#2A2A35" BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0">
+                    <TextBlock Text="■" Foreground="#F59E0B" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBlock Text="MIDI STEP EXTRACTOR" Foreground="#F0F0F5"
+                               FontFamily="Consolas" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <TextBlock Grid.Column="1" Text="{Binding MidiFilePath}"
+                           Foreground="#8888A0" FontFamily="Consolas" FontSize="10"
+                           VerticalAlignment="Center" HorizontalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"/>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0">
+                    <TextBlock Text="BPM" Foreground="#8888A0" FontSize="10" FontWeight="SemiBold"
+                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBox Text="{Binding Bpm, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource DarkTextBox}"
+                             Width="48" Height="24" VerticalAlignment="Center" TextAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ═══════════════════════════════════════════
+             MAIN CONTENT
+        ═══════════════════════════════════════════ -->
+        <Grid Grid.Row="1" Margin="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="260"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- LEFT PANEL -->
+            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" Margin="0,0,12,0">
+                <StackPanel>
+
+                    <!-- MIDI File -->
+                    <Border Style="{StaticResource PanelCard}" Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="MIDI FILE" Foreground="#8888A0" FontSize="10"
+                                       FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <Button Content="▸  Open MIDI File"
+                                    Command="{Binding OpenMidiFileCommand}"
+                                    Style="{StaticResource PrimaryButton}"
+                                    HorizontalAlignment="Stretch"/>
+
+                            <TextBlock Text="TRACK" Foreground="#8888A0" FontSize="10"
+                                       FontWeight="SemiBold" Margin="0,12,0,4"
+                                       Visibility="{Binding IsMidiLoaded, Converter={StaticResource BoolToVis}}"/>
+                            <ComboBox ItemsSource="{Binding Tracks}"
+                                      SelectedItem="{Binding SelectedTrack}"
+                                      Style="{StaticResource DarkComboBox}"
+                                      DisplayMemberPath="DisplayName"
+                                      Visibility="{Binding IsMidiLoaded, Converter={StaticResource BoolToVis}}"/>
+
+                            <Border Background="#242430" CornerRadius="3" Padding="8,6" Margin="0,6,0,0"
+                                    Visibility="{Binding HasTrackSelected, Converter={StaticResource BoolToVis}}">
+                                <StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="NOTES" Foreground="#8888A0" FontSize="9" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding SelectedTrack.NoteCount}"
+                                                       Foreground="#F59E0B" FontFamily="Consolas" FontSize="13"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="BARS" Foreground="#8888A0" FontSize="9" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding SelectedTrack.BarCount}"
+                                                       Foreground="#F59E0B" FontFamily="Consolas" FontSize="13"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <TextBlock Text="{Binding SelectedTrack.InstrumentName}"
+                                               Foreground="#8888A0" FontFamily="Consolas" FontSize="10" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Step Selection -->
+                    <Border Style="{StaticResource PanelCard}" Margin="0,0,0,10"
+                            Visibility="{Binding IsMidiLoaded, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <TextBlock Text="STEP SELECTION" Foreground="#8888A0" FontSize="10"
+                                       FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="START BAR" Foreground="#8888A0" FontSize="10"
+                                           FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                    <TextBox Text="{Binding StartBar, UpdateSourceTrigger=PropertyChanged}"
+                                             Style="{StaticResource DarkTextBox}"
+                                             Width="40" Height="24" TextAlignment="Center"/>
+                                    <TextBlock Text="{Binding MaxBar, StringFormat='/{0}'}"
+                                               Foreground="#8888A0" FontFamily="Consolas" FontSize="10"
+                                               VerticalAlignment="Center" Margin="3,0"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock Text="STEPS" Foreground="#8888A0" FontSize="10"
+                                       FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="0" Content="16 Steps"
+                                        Command="{Binding SetStep16Command}"
+                                        Style="{StaticResource SecondaryButton}"/>
+                                <Button Grid.Column="2" Content="32 Steps"
+                                        Command="{Binding SetStep32Command}"
+                                        Style="{StaticResource SecondaryButton}"/>
+                            </Grid>
+                            <Button Content="↻  Re-Extract" Command="{Binding ExtractStepsCommand}"
+                                    Style="{StaticResource SecondaryButton}"
+                                    Margin="0,8,0,0" HorizontalAlignment="Stretch"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- MIDI Output -->
+                    <Border Style="{StaticResource PanelCard}" Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="MIDI OUTPUT" Foreground="#8888A0" FontSize="10"
+                                       FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <ComboBox ItemsSource="{Binding MidiDevices}"
+                                      SelectedIndex="{Binding SelectedDeviceIndex}"
+                                      Style="{StaticResource DarkComboBox}"
+                                      Margin="0,0,0,6"/>
+                            <Button Content="↻  Refresh Devices"
+                                    Command="{Binding RefreshMidiDevicesCommand}"
+                                    Style="{StaticResource SecondaryButton}"
+                                    HorizontalAlignment="Stretch"/>
+                            <Border Background="#242430" CornerRadius="3" Padding="8" Margin="0,8,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Better sound quality?" Foreground="#F59E0B"
+                                               FontSize="10" FontWeight="SemiBold"/>
+                                    <TextBlock Foreground="#8888A0" FontSize="9" TextWrapping="Wrap" Margin="0,4,0,0">
+                                        <Run Text="Install VirtualMIDISynth + a free .sf2 SoundFont."/>
+                                        <LineBreak/>
+                                        <Run Text="coolsoft.altervista.org/en/virtualmidisynth"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Playback -->
+                    <Border Style="{StaticResource PanelCard}" Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="PLAYBACK" Foreground="#8888A0" FontSize="10"
+                                       FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <Button Content="{Binding IsPlaying, Converter={StaticResource PlayLabel}}"
+                                    Command="{Binding TogglePlaybackCommand}"
+                                    Style="{StaticResource GreenButton}"
+                                    HorizontalAlignment="Stretch" Margin="0,0,0,8"/>
+                            <CheckBox Content="Loop" IsChecked="{Binding LoopPlayback}"
+                                      Foreground="#8888A0" FontSize="11"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Export -->
+                    <Border Style="{StaticResource PanelCard}">
+                        <StackPanel>
+                            <TextBlock Text="EXPORT" Foreground="#8888A0" FontSize="10"
+                                       FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <Button Content="⬇  Export as MIDI"
+                                    Command="{Binding ExportMidiCommand}"
+                                    Style="{StaticResource SecondaryButton}"
+                                    HorizontalAlignment="Stretch"
+                                    IsEnabled="{Binding HasSteps}"/>
+                            <TextBlock Text="Exports active steps as a single-track MIDI file"
+                                       Foreground="#444455" FontSize="9" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- STEP GRID -->
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Grid Header -->
+                <Border Grid.Row="0" Background="#141418" BorderBrush="#2A2A35"
+                        BorderThickness="1,1,1,0" CornerRadius="4,4,0,0" Padding="16,10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="STEP GRID" Foreground="#8888A0" FontSize="10"
+                                       FontWeight="SemiBold" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                            <Border Background="#242430" CornerRadius="2" Padding="6,2">
+                                <TextBlock Text="{Binding StepCountLabel}"
+                                           Foreground="#F59E0B" FontFamily="Consolas" FontSize="11"/>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Text="Click any step to toggle on/off"
+                                   Foreground="#444455" FontSize="10" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- Empty state -->
+                <Border Grid.Row="1" Background="#1C1C22" BorderBrush="#2A2A35"
+                        BorderThickness="1,0,1,1" CornerRadius="0,0,4,4"
+                        Visibility="{Binding IsMidiLoaded, Converter={StaticResource InvBoolToVis}}">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock Text="◉" FontSize="48" Foreground="#444455" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Open a MIDI file to see the step grid"
+                                   Foreground="#8888A0" FontSize="13" Margin="0,8,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Step Grid -->
+                <ScrollViewer Grid.Row="1" Background="#1C1C22" VerticalScrollBarVisibility="Auto"
+                              Visibility="{Binding IsMidiLoaded, Converter={StaticResource BoolToVis}}">
+                    <Border BorderBrush="#2A2A35" BorderThickness="1,0,1,1"
+                            CornerRadius="0,0,4,4" Padding="12">
+                        <ItemsControl ItemsSource="{Binding Steps}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Rows="1"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type models:StepModel}">
+                                    <Grid Margin="2,0">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="14"/>
+                                            <RowDefinition Height="60"/>
+                                            <RowDefinition Height="14"/>
+                                            <RowDefinition Height="50"/>
+                                            <RowDefinition Height="14"/>
+                                            <RowDefinition Height="30"/>
+                                            <RowDefinition Height="14"/>
+                                        </Grid.RowDefinitions>
+
+                                        <!-- Step number -->
+                                        <TextBlock Grid.Row="0" Text="{Binding StepIndex}"
+                                                   Foreground="#444455" FontFamily="Consolas" FontSize="8"
+                                                   HorizontalAlignment="Center"/>
+
+                                        <!-- Step Button -->
+                                        <Button Grid.Row="1" Margin="0,2" Cursor="Hand"
+                                                Click="StepButton_Click" Tag="{Binding StepIndex}">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="StepBorder" CornerRadius="3" BorderThickness="1">
+                                                        <Border.Background>
+                                                            <MultiBinding Converter="{StaticResource StepColor}">
+                                                                <Binding Path="IsActive"/>
+                                                                <Binding Path="IsPlaying"/>
+                                                                <Binding Path="StepIndex"/>
+                                                            </MultiBinding>
+                                                        </Border.Background>
+                                                        <Border.BorderBrush>
+                                                            <MultiBinding Converter="{StaticResource StepColor}">
+                                                                <Binding Path="IsActive"/>
+                                                                <Binding Path="IsPlaying"/>
+                                                                <Binding Path="StepIndex"/>
+                                                            </MultiBinding>
+                                                        </Border.BorderBrush>
+                                                        <Border CornerRadius="3" Background="#40FFFFFF"
+                                                                Opacity="{Binding IsPlaying, Converter={StaticResource PlayOpacity}}"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+
+                                        <!-- Note name -->
+                                        <TextBlock Grid.Row="2" Text="{Binding NoteName}"
+                                                   FontFamily="Consolas" FontSize="8"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock.Foreground>
+                                                <MultiBinding Converter="{StaticResource StepColor}">
+                                                    <Binding Path="IsActive"/>
+                                                    <Binding Path="IsPlaying"/>
+                                                    <Binding Path="StepIndex"/>
+                                                </MultiBinding>
+                                            </TextBlock.Foreground>
+                                        </TextBlock>
+
+                                        <!-- Velocity Slider -->
+                                        <Slider Grid.Row="3"
+                                                Minimum="1" Maximum="127"
+                                                Value="{Binding Velocity}"
+                                                Orientation="Vertical"
+                                                HorizontalAlignment="Center"
+                                                Style="{StaticResource VelocitySlider}"
+                                                IsEnabled="{Binding IsActive}"/>
+
+                                        <!-- Velocity label -->
+                                        <TextBlock Grid.Row="4"
+                                                   Text="{Binding Velocity, Converter={StaticResource VelocityDisplay}}"
+                                                   Foreground="#8888A0" FontFamily="Consolas" FontSize="7"
+                                                   HorizontalAlignment="Center"/>
+
+                                        <!-- Length ComboBox -->
+                                        <ComboBox Grid.Row="5"
+                                                  SelectedValue="{Binding LengthTicks}"
+                                                  IsEnabled="{Binding IsActive}"
+                                                  FontSize="8" FontFamily="Consolas"
+                                                  Height="22" Margin="0,2"
+                                                  Foreground="#F0F0F5"
+                                                  Background="#242430"
+                                                  BorderBrush="#2A2A35">
+                                            <sys:Double>0.25</sys:Double>
+                                            <sys:Double>0.5</sys:Double>
+                                            <sys:Double>1.0</sys:Double>
+                                            <sys:Double>2.0</sys:Double>
+                                            <sys:Double>4.0</sys:Double>
+                                        </ComboBox>
+
+                                        <!-- Length label -->
+                                        <TextBlock Grid.Row="6" Text="LEN"
+                                                   Foreground="#444455" FontFamily="Consolas" FontSize="7"
+                                                   HorizontalAlignment="Center"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Border>
+                </ScrollViewer>
+            </Grid>
+        </Grid>
+
+        <!-- STATUS BAR -->
+        <Border Grid.Row="2" Background="#141418" BorderBrush="#2A2A35" BorderThickness="0,1,0,0">
+            <Grid Margin="12,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding StatusMessage}"
+                           Foreground="#8888A0" FontFamily="Consolas" FontSize="10"
+                           VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse Width="6" Height="6" Margin="0,0,6,0"
+                             Fill="{Binding IsPlaying, Converter={StaticResource LoadedBrush}}"/>
+                    <TextBlock FontFamily="Consolas" FontSize="9">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text"       Value="STOPPED"/>
+                                <Setter Property="Foreground" Value="#444455"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsPlaying}" Value="True">
+                                        <Setter Property="Text"       Value="PLAYING"/>
+                                        <Setter Property="Foreground" Value="#22C55E"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
